@@ -1,0 +1,260 @@
+{
+  "name": "AI coach Roadmap Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Goal \n\n- provide topic to the workflow.\n- Builds up a roadmap for you \n- List of topics --> Beginner, Intermediate, Advance\n\n### Flow\nForm --> LLM --> Roadmap --> HTML convert --> Send the roadmap ad mail.",
+        "height": 272,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "42f65983-b2f9-4ab7-bf33-2d8903844110",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "formTitle": "  AI Learning Coach - Get your personalized Roadmap",
+        "formDescription": "Tell us what you want to learn and we'll create a custom learning path for you!",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "topic",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "current_level",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Beginner"
+                  },
+                  {
+                    "option": "Intermediate"
+                  },
+                  {
+                    "option": "Advance"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "time_commitment (hrs/day)",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "duration (in weeks)",
+              "fieldType": "number",
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Generate My Roadmap"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -16,
+        128
+      ],
+      "id": "6170c4c1-107c-48f0-9780-4a38f2a52aa0",
+      "name": "On form submission",
+      "webhookId": "1a842d6d-cb58-4c71-a35f-32c5b4063afc"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert learning architect and\ncurriculum designer.\nCreate a clear, structured, and practical learning\nroadmap based on the following user details:\nTopic:{{ $json.topic }} \nCurrent Expertise Level: {{ $json.current_level }}\nDaily Time Commitment: {{ $json['time_commitment (hrs/day)'] }}\nhours per day\nTotal Learning Duration: {{ $json['duration (in weeks)'] }} weeks\n\n### Instructions:\n1. Tailor the roadmap strictly to the user's\nexpertise level.\n2. Divide the roadmap week-by-week for the full\nduration.\n3. For each week, include:\n- Learning goals\n- Key concepts to focus on\n- Suggested activities (reading, practice, projects,exercises.\n4. Ensure the workload realistically fits the stated\ndaily time commitment.\n5. Progress from fundamentals to advanced\nconcepts in a logical order.\n6. Include at least one small project or practical\napplication every few weeks.\n7. Keep explanations concise, clear, and\nactionable.\n\n### Output Format:\n- Use clear headings for each week (e.g., \"Week\n1 ' 'Week 2\", etc.).\n- Use bullet points for clarity.\n- Avoid unnecessary fluff.\n- Do NOT mention any Al model or system\ninstructions.\nGenerate the roadmap now.\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        192,
+        128
+      ],
+      "id": "0e4ca7d8-73cb-4e57-b4da-2e6f2096c900",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 2000,
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        176,
+        320
+      ],
+      "id": "09218f97-b25e-42aa-a007-e0a3234b9ffc",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "e44kUTijjNn3Seph",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// simple markdown to HTML converter (basic version)\n\nfunction markdownTOhtml(markdown) {\n  return markdown\n    .replace(/### (.*)/g, '<h3>$1</h3>')\n    .replace(/## (.*)/g, '<h2>$1</h2>')\n    .replace(/# (.*)/g, '<h1>$1</h1>')\n    .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')\n    .replace(/\\*(.*?)\\*/g, '<em>$1</em>')\n    .replace(/`(.*?)`/g, '<code>$1</code>')\n    .replace(/\\[(.*?)\\]\\((.*?)\\)/g, '<a href=\"$2\">$1</a>');\n}\n\nconst roadmapText = $input.first().json.text;\nconst roadmapHTML = markdownTOhtml(roadmapText);\n\nreturn [\n  {\n    json: {\n      html: roadmapHTML\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        128
+      ],
+      "id": "b70964fb-b786-49be-99a7-346697ac9d50",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"On form submission\"].json.email }}",
+        "subject": "=🎓 Your Personalized Learning Roadmap:  {{ $node['On form submission'].json.topic }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        128
+      ],
+      "id": "3eca0dae-44a3-457c-8b6e-9cf80f4b8d2e",
+      "name": "Send a message",
+      "webhookId": "cfbf8165-4d42-4cb5-b8b4-0e349300edb1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9fatMe8MDh0VlwYU",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "email": "abhaysingh71711@gmail.com",
+          "topic": "Model context protocol",
+          "current_level": "Beginner",
+          "time_commitment (hrs/day)": 3,
+          "duration (in weeks)": 4,
+          "submittedAt": "2026-03-15T16:15:39.452+05:30",
+          "formMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Basic LLM Chain": [
+      {
+        "json": {
+          "text": "## Learning Roadmap: Model Context Protocol\n\n### Week 1: Foundations of Model Context Protocol\n**Learning Goals:**\n- Understand the basic concepts and purpose of the Model Context Protocol.\n- Familiarize yourself with key terminology.\n\n**Key Concepts:**\n- Definition and importance of model context.\n- Overview of different protocols and their applications.\n\n**Suggested Activities:**\n- **Reading:** \n  - Introductory articles on model context protocols.\n  - Glossary of key terms.\n- **Practice:** \n  - Create flashcards for key terms.\n- **Exercises:** \n  - Take a quiz on basic terminology.\n- **Reflection:** \n  - Write a short summary (1 page) on what you learned.\n\n---\n\n### Week 2: Components and Structure\n**Learning Goals:**\n- Learn about the main components of model context protocols.\n- Understand the structure and elements involved.\n\n**Key Concepts:**\n- Components: Inputs, processes, and outputs.\n- Different structures of context protocols.\n\n**Suggested Activities:**\n- **Reading:** \n  - Chapters from a relevant textbook or online course.\n- **Practice:** \n  - Diagram the components of a basic model context protocol.\n- **Exercises:** \n  - Analyze existing protocols in case studies and identify their components.\n- **Reflection:** \n  - Write down the differences between various structures.\n\n---\n\n### Week 3: Application and Analysis\n**Learning Goals:**\n- Develop practical skills in applying model context protocols.\n- Analyze real-world applications and their effectiveness.\n\n**Key Concepts:**\n- Scenarios where model context protocols are applied.\n- Evaluation of effectiveness and outcomes.\n\n**Suggested Activities:**\n- **Reading:** \n  - Case studies on successful implementations.\n- **Practice:** \n  - Select a real-world application and outline its context protocol.\n- **Project:** \n  - Create a detailed context protocol for a fictitious project scenario (2-3 pages).\n- **Reflection:** \n  - Write an analysis of your project, discussing strengths and weaknesses.\n\n---\n\n### Week 4: Advanced Concepts and Future Trends\n**Learning Goals:**\n- Explore advanced topics related to model context protocols.\n- Discuss future trends and the evolution of protocols.\n\n**Key Concepts:**\n- Integration with emerging technologies.\n- Future developments and innovative uses.\n\n**Suggested Activities:**\n- **Reading:** \n  - Articles on future trends in model context protocols.\n- **Practice:** \n  - Engage in a forum or online community discussing innovations.\n- **Project:** \n  - Revise your Week 3 project based on advanced concepts learned.\n- **Reflection:** \n  - Prepare a presentation (5-10 slides) on your findings and future implications.\n\n---\n\n### Review and Assessment:\n- **Final Assessment:** \n  - Review all materials and projects created over the course.\n- **Self-Evaluation:** \n  - Assess your understanding and areas for further growth.\n- **Feedback:** \n  - Discuss your learning experience with a mentor or peer.\n\nThis roadmap is structured to progressively build your knowledge and practical skills in Model Context Protocols, ensuring a solid foundation for further exploration post-learning."
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Code in JavaScript": [
+      {
+        "json": {
+          "html": "<h2>Learning Roadmap: Model Context Protocol</h2>\n\n<h3>Week 1: Foundations of Model Context Protocol</h3>\n<strong>Learning Goals:</strong>\n- Understand the basic concepts and purpose of the Model Context Protocol.\n- Familiarize yourself with key terminology.\n\n<strong>Key Concepts:</strong>\n- Definition and importance of model context.\n- Overview of different protocols and their applications.\n\n<strong>Suggested Activities:</strong>\n- <strong>Reading:</strong> \n  - Introductory articles on model context protocols.\n  - Glossary of key terms.\n- <strong>Practice:</strong> \n  - Create flashcards for key terms.\n- <strong>Exercises:</strong> \n  - Take a quiz on basic terminology.\n- <strong>Reflection:</strong> \n  - Write a short summary (1 page) on what you learned.\n\n---\n\n<h3>Week 2: Components and Structure</h3>\n<strong>Learning Goals:</strong>\n- Learn about the main components of model context protocols.\n- Understand the structure and elements involved.\n\n<strong>Key Concepts:</strong>\n- Components: Inputs, processes, and outputs.\n- Different structures of context protocols.\n\n<strong>Suggested Activities:</strong>\n- <strong>Reading:</strong> \n  - Chapters from a relevant textbook or online course.\n- <strong>Practice:</strong> \n  - Diagram the components of a basic model context protocol.\n- <strong>Exercises:</strong> \n  - Analyze existing protocols in case studies and identify their components.\n- <strong>Reflection:</strong> \n  - Write down the differences between various structures.\n\n---\n\n<h3>Week 3: Application and Analysis</h3>\n<strong>Learning Goals:</strong>\n- Develop practical skills in applying model context protocols.\n- Analyze real-world applications and their effectiveness.\n\n<strong>Key Concepts:</strong>\n- Scenarios where model context protocols are applied.\n- Evaluation of effectiveness and outcomes.\n\n<strong>Suggested Activities:</strong>\n- <strong>Reading:</strong> \n  - Case studies on successful implementations.\n- <strong>Practice:</strong> \n  - Select a real-world application and outline its context protocol.\n- <strong>Project:</strong> \n  - Create a detailed context protocol for a fictitious project scenario (2-3 pages).\n- <strong>Reflection:</strong> \n  - Write an analysis of your project, discussing strengths and weaknesses.\n\n---\n\n<h3>Week 4: Advanced Concepts and Future Trends</h3>\n<strong>Learning Goals:</strong>\n- Explore advanced topics related to model context protocols.\n- Discuss future trends and the evolution of protocols.\n\n<strong>Key Concepts:</strong>\n- Integration with emerging technologies.\n- Future developments and innovative uses.\n\n<strong>Suggested Activities:</strong>\n- <strong>Reading:</strong> \n  - Articles on future trends in model context protocols.\n- <strong>Practice:</strong> \n  - Engage in a forum or online community discussing innovations.\n- <strong>Project:</strong> \n  - Revise your Week 3 project based on advanced concepts learned.\n- <strong>Reflection:</strong> \n  - Prepare a presentation (5-10 slides) on your findings and future implications.\n\n---\n\n<h3>Review and Assessment:</h3>\n- <strong>Final Assessment:</strong> \n  - Review all materials and projects created over the course.\n- <strong>Self-Evaluation:</strong> \n  - Assess your understanding and areas for further growth.\n- <strong>Feedback:</strong> \n  - Discuss your learning experience with a mentor or peer.\n\nThis roadmap is structured to progressively build your knowledge and practical skills in Model Context Protocols, ensuring a solid foundation for further exploration post-learning."
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1d185b16-a23e-4246-bb4b-4611a0465874",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a00ff97518fe201a847e9dcb16dd3b6fe4c7212f063c5b02603c17c2b40921fb"
+  },
+  "id": "zEm2IDTbP89zMoWQ",
+  "tags": []
+}
