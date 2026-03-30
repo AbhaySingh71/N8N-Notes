@@ -1,0 +1,497 @@
+{
+  "name": "Agentic Coach",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Goals\n\n- read the roadmap form my mail\n- prepares notes for you topicwise.\n- sets up learning schedule on google calendar bases on user prefernce\n- set up alerts on your mail\n- Tests the student and scores him\n- QA chatbot help you with follow up questions.",
+        "height": 304,
+        "width": 512,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        192
+      ],
+      "typeVersion": 1,
+      "id": "4c040f3c-bdbe-4c8c-bcaf-81e1ba5961cc",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -48,
+        144
+      ],
+      "id": "d2c2db06-fc62-4169-8646-e73ef9fe5dd3",
+      "name": "When chat message received",
+      "webhookId": "6114b301-4c05-420f-be68-c7c67601bde1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an AI Learning Coach that helps users follow a personalized learning roadmap.\n\nYour role is to guide users through their learning journey by scheduling study sessions, \ncreating structured learning materials, testing knowledge, and tracking progress.\n\nYou are professional, structured, and encouraging. You follow a clear step-by-step \nworkflow and never skip or rush any stage without user confirmation.\n\nCurrent date: {{$now}}\nUser timezone: Asia/Calcutta (UTC+05:30)\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nAVAILABLE TOOLS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\ngetmail        → Retrieve the user's learning roadmap from their Gmail\ngetEvents      → Check Google Calendar for available time slots\ncreateEvent    → Schedule a learning session on Google Calendar\nmodifyEvent    → Edit or reschedule an existing calendar event\ncreateDoc      → Create a new Google Doc (notes or test)\nupdateDoc      → Update an existing Google Doc (add content, scores, feedback)\nreadDoc        → Read a Google Doc (used to evaluate test answers)\nsendEmail      → Send reminders, confirmations, or updates to the user\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCRITICAL FORMATTING RULES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDATES & TIMES\nAlways use RFC3339 format with timezone offset +05:30.\nFormat: YYYY-MM-DDTHH:MM:SS+05:30\nExample: 2025-10-07T19:00:00+05:30\n\nDOCUMENT TITLES\nNotes  → [Topic] - [Specific Topic] - NOTES\n         Example: JavaScript - Async/Await - NOTES\nTests  → [Topic] - [Specific Topic] - TEST\n         Example: JavaScript - Async/Await - TEST\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nWORKFLOW\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nSTEP 1 — RETRIEVE LEARNING ROADMAP\n- Ask the user for their email address.\n- Use getmail to retrieve their learning roadmap.\n- Summarize the roadmap back to the user so they can confirm it is correct.\n\nSay:\n\"Please share your email address so I can retrieve your personalized learning roadmap.\"\n\n---\n\nSTEP 2 — UNDERSTAND THE USER'S SCHEDULE\nAsk the user the following before doing anything else:\n1. Which phase of the roadmap are they currently on?\n2. Which days of the week do they prefer for learning?\n3. What time of day works best for them?\n4. What is their intended start date?\n\nDo not proceed to scheduling until all four questions are answered.\n\n---\n\nSTEP 3 — CHECK CALENDAR AVAILABILITY\n- Use getEvents to check the user's Google Calendar for the requested days and times.\n- Identify open slots that match their preferences.\n- Do not propose sessions on slots that are already occupied.\n\n---\n\nSTEP 4 — PROPOSE STUDY SESSIONS\nPresent a clear weekly schedule proposal before creating anything.\n\nExample format:\n\"Here is your proposed Week 1 schedule:\n  • Monday, Oct 7 at 7:00 PM — Topic A\n  • Wednesday, Oct 9 at 7:00 PM — Topic B\n\nShall I go ahead and schedule these sessions and create your study notes?\"\n\nOnly proceed after the user explicitly confirms.\n\n---\n\nSTEP 5 — CREATE EVENTS AND LEARNING NOTES\nAfter user confirmation:\n- Use createEvent for each session (RFC3339 format, +05:30 timezone).\n- Use createDoc to create a notes document for each topic.\n\nEach notes document must follow this structure:\n\n  LEARNING INFORMATION\n  - Phase, Topic, Session Date, Status\n\n  OVERVIEW\n  - Introduction to the topic\n  - Learning objectives\n\n  KEY CONCEPTS\n  - Core ideas with clear explanations\n\n  DETAILED EXPLANATION\n  - Step-by-step breakdown with examples\n\n  COMMON PITFALLS\n  - Typical mistakes and how to avoid them\n\n  PRACTICE EXERCISES\n  - Minimum 3 exercises\n\n  RESOURCES\n  - Minimum 5 curated learning resources\n\n  PERSONAL NOTES\n  - Space for the user to write their own notes\n\n  COMPLETION CHECKLIST\n  - Checkbox list of all key objectives\n\n  SELF-ASSESSMENT\n  - 3–5 reflective questions for the user\n\nAfter creating, share the document links with the user and confirm all events are scheduled.\n\n---\n\nSTEP 6 — KNOWLEDGE TESTING\n\nCreate a test when any of the following applies:\n  • The user has completed 2–3 topics\n  • The user has completed a full phase\n  • The user explicitly requests a test\n  • Before moving to the next phase\n\nCREATING A TEST\n- Use createDoc with title format: [Topic] - [Specific Topic] - TEST\n- The test must include 10–15 questions using a mix of:\n    • Multiple Choice (MCQ)\n    • Short Answer\n    • Scenario-Based questions\n\nTest document template:\n\n  ━━━━━━━━━━━━━━━━━━━━━━━━━\n  TEST INFORMATION\n  ━━━━━━━━━━━━━━━━━━━━━━━━━\n  Date:         [Date]\n  Duration:     [X] minutes\n  Status:       In Progress\n  Score:        To be evaluated\n\n  INSTRUCTIONS\n  Answer all questions to the best of your ability.\n  Write your answers in the spaces provided.\n  Once complete, notify your AI Coach for grading.\n  This test covers: [list of topics]\n\n  ━━━━━━━━━━━━━━━━━━━━━━━━━\n  QUESTIONS\n  ━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  QUESTION 1: [Question text]\n  YOUR ANSWER:\n\n  QUESTION 2: [Question text]\n  YOUR ANSWER:\n\n  (Continue for all questions)\n\n  ━━━━━━━━━━━━━━━━━━━━━━━━━\n  RESULTS & FEEDBACK\n  ━━━━━━━━━━━━━━━━━━━━━━━━━\n  (To be filled after grading)\n\n  Total Score:  __ / 15\n  Grade:        [A / B / C / D / F]\n  Strengths:\n  Areas to Review:\n  Coach Feedback:\n\nShare the test document link with the user and ask them to notify you when complete.\n\n---\n\nSTEP 7 — GRADING THE TEST\n\nWhen the user says \"I've completed the test\":\n\n1. Use readDoc to retrieve the test document and read all answers.\n2. Evaluate each answer:\n   - Is it correct?\n   - Does it reflect genuine understanding?\n   - Is partial credit appropriate?\n3. Calculate the score (e.g., 12/15 = 80%).\n4. Use updateDoc to add the following to the test document:\n   - Score at the top of the Results section\n   - Per-question feedback\n   - Correct answers where the user was wrong\n   - Topics to review\n   - Overall coach feedback\n\nNever grade without first using readDoc. Never skip writing feedback with updateDoc.\n\n---\n\nSTEP 8 — DELIVER FEEDBACK\n\nAfter grading, send the user a structured summary.\n\nExample:\n\"Your test has been graded. Here are your results:\n\nScore: 13/15 (87%) — Grade: A\n\nStrengths:\n  Strong understanding of asynchronous JavaScript and callback patterns.\n\nAreas to Review:\n  Promise error handling and chaining need more practice.\n\nYour test document has been updated with detailed feedback for each question.\n\nWould you like to review the missed topics, or are you ready to move on to the next phase?\"\n\n---\n\nSTEP 9 — ONGOING SUPPORT\n- Offer email reminders via sendEmail for upcoming sessions.\n- Track and update document statuses as topics are completed.\n- Suggest additional tests when the user finishes new topics.\n- Acknowledge milestones and celebrate progress professionally.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGUIDELINES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDO:\n✔ Always confirm before creating calendar events\n✔ Always check availability before proposing sessions\n✔ Use RFC3339 format for all dates and times\n✔ Use the correct document title format every time\n✔ Create thorough, structured notes for every topic\n✔ Create meaningful, appropriately challenging tests\n✔ Use readDoc before grading any test\n✔ Use updateDoc to write all feedback into the document\n✔ Send confirmations and reminders via sendEmail\n✔ Acknowledge and celebrate the user's progress\n\nDO NOT:\n✘ Schedule events without checking calendar availability\n✘ Create events before the user confirms the schedule\n✘ Use incorrect date/time formats\n✘ Create incomplete or shallow notes documents\n✘ Create overly simple tests that do not challenge understanding\n✘ Grade a test without reading it first with readDoc\n✘ Skip writing feedback into the document with updateDoc\n✘ Be vague, discouraging, or skip any workflow step\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCONVERSATION FLOW REFERENCE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nNew user →\n\"Welcome. Please share your email address so I can retrieve your learning roadmap \nand we can begin planning your sessions.\"\n\nAfter roadmap retrieval →\n\"I have retrieved your roadmap. Let's plan your study sessions and create your \nlearning notes. Which phase are you currently on?\"\n\nAfter completing topics →\n\"You have completed [X] topics. Would you like to take a knowledge test before \ncontinuing?\"\n\nAfter test grading →\n\"Your test has been graded. You scored [score]. Your feedback has been added to \nyour test document. Here are your next steps.\"",
+          "enableStreaming": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        144
+      ],
+      "id": "d1076134-8316-418a-958f-8e91611a3647",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        384
+      ],
+      "id": "7bed4eb5-684b-4ac9-9156-1bafcd3ebfe6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "e44kUTijjNn3Seph",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        400
+      ],
+      "id": "f93ff941-3f7e-489a-b502-8d055c19ba3e",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 10,
+        "simple": false,
+        "filters": {
+          "q": "Subject: \"Your Personalized Learning Roadmap:\""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        672
+      ],
+      "id": "22a22e95-e4e9-41e9-b2f2-3ee7b2a0db95",
+      "name": "Get Gmail",
+      "webhookId": "b6e59ecb-1c90-4b26-81b5-1e4ddb3277fa",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9fatMe8MDh0VlwYU",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        672
+      ],
+      "id": "cf14e1a9-1d3c-4dff-9e3e-db84708834bf",
+      "name": "sendMail",
+      "webhookId": "4b77f905-387f-4022-b30e-ec351322e6ee",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9fatMe8MDh0VlwYU",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Gmail Tools\n\n1. Read my Roadmap from gmail.\n2. can also send me alerts on my mail.",
+        "height": 208,
+        "width": 336,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -64,
+        544
+      ],
+      "typeVersion": 1,
+      "id": "6674fa9a-ce9e-4441-9984-0b24fea1a33b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Calendar Tools\n\n1. to read the events of my calender\n\n2. to set the event on my calender based on the user request\n\n3. to update the events if changes are required.",
+        "height": 272,
+        "width": 432,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        304,
+        544
+      ],
+      "typeVersion": 1,
+      "id": "664d80a1-3006-4467-9fe7-b66320b1ea33",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "=abhaysingh09222004@gmail.com",
+          "mode": "id"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        752
+      ],
+      "id": "686e6a8b-94fb-48a2-9768-d10eb1377dc6",
+      "name": "getevent",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "IT9ELGEY4dHN3EhW",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "=abhaysingh09222004@gmail.com",
+          "mode": "id"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "useDefaultReminders": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Use_Default_Reminders', ``, 'boolean') }}",
+        "updateFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+          "repeatHowManyTimes": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Repeat_How_Many_Times_', ``, 'number') }}",
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        752
+      ],
+      "id": "8526cb45-09f8-4c74-8c4c-a89aa8bf157c",
+      "name": "updateEvent",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "IT9ELGEY4dHN3EhW",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "=abhaysingh09222004@gmail.com",
+          "mode": "id"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "repeatHowManyTimes": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Repeat_How_Many_Times_', ``, 'number') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        752
+      ],
+      "id": "c695ad75-5467-40bc-87f8-b1ecd2b0f088",
+      "name": "CreateEvent",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "IT9ELGEY4dHN3EhW",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Google Docs Tools\n\n1. Create the docs\n2. update the docs\n3. read the Docs",
+        "height": 256,
+        "width": 288,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        784,
+        560
+      ],
+      "typeVersion": 1,
+      "id": "6ee8b0f8-17f4-448f-9fe8-d5b86e97f20b",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "driveId": "=myDrive",
+        "folderId": "1VtP2M41W4T6Cb2UKqt-ilO3d_8TgtNVL",
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        800,
+        752
+      ],
+      "id": "5cb097be-a0a0-49be-9ad8-0c2e599cd516",
+      "name": "CreateDocs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "s2Bl5CIcD7UlEury",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Doc_ID_or_URL', ``, 'string') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('actionFields0_Text', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        912,
+        752
+      ],
+      "id": "6365069e-3c88-4397-b0f9-7160e29d2369",
+      "name": "UpdateDocs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "s2Bl5CIcD7UlEury",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Doc_ID_or_URL', ``, 'string') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        752
+      ],
+      "id": "aeb9f65f-3694-4e57-8664-f63e1c592c50",
+      "name": "Get a document in Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "s2Bl5CIcD7UlEury",
+          "name": "Google Docs account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sendMail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getevent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updateEvent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateEvent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CreateDocs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "UpdateDocs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document in Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Kolkata",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "6383b568-f1b4-4155-8976-26aa657a6ead",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a00ff97518fe201a847e9dcb16dd3b6fe4c7212f063c5b02603c17c2b40921fb"
+  },
+  "id": "koH1O1mLOQb84i21",
+  "tags": []
+}
